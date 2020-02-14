@@ -2,6 +2,7 @@
 
 ## 1. Prepared the datasets
 Download the current replease repeatbase:
+
 ▪	EMBL format (87.86 MB) 01-24-2017:
 ▪	RepBase22.01.embl.tar.gz 
 ▪	FASTA format (42.11 MB) 01-24-2017:
@@ -99,18 +100,22 @@ Statistic the gff files:
 mikado util stats mikado.loci.gff3 mikado.loci.stats
 
 ### 14. Create hints from proteins
+
 exonerate2hints.pl --in=Braincoral_exonerate_all.out --maxintronlen=20000 --source=P --minintron=31 --out=hints.protein.gff
 
 ### 15. Create hints from RepeatMasker 
+
 perl -pe 's/^\s*$//' | perl -ne 'chomp; s/^\s+//; @t = split(/\s+/); print $t[4]."\t"."repmask\tnonexonpart\t".$t[5]."\t".$t[6]."\t0\t.\t.\tsrc=RM\n";' > hints.repeats.gff
 
 ### 16. Create hints from RNA-seq
+
 bam2hints --in=Braincoral_sort.bam --out=hints.intron.gff --maxgenelen=30000 --intronsonly
 Get exon hints:
 bam2wig Braincoral_sort.bam >Braincoral_hisat.wig
 cat Braincoral_hisat.wig | wig2hints.pl --width=10 --margin=10 --minthresh=2 --minscore=4 --prune=0.1 --src=W --type=ep --UCSC=unstranded.track --radius=4.5 --pri=4 --strand="." > hints.exonpart.gff
 
 ### 17 Run PASA for trainingset
+
 17.1 seqclean to clean transcript sequences
 seqclean transcripts.fasta -v vectors.fasta
 17.2 Run PASA
@@ -118,8 +123,8 @@ cp $PASA_HOME/pasa_conf/pasa.alignAssembly.Template.txt alignAssembly.config
 perl -p -i -e 's/MYSQLDB=.*/MYSQLDB=sample_mydb_pasa/' alignAssembly.config
 $PASA_HOME/scripts/Launch_PASA_pipeline.pl -c alignAssembly.config -C -R -g genome_sample.fasta -t all_transcripts.fasta.clean -T -u all_transcripts.fasta -f FL_accs.txt --ALIGNERS blat,gmap --CPU 20
 17.3 Filter PASA for best training sets
-/home/xinw/software/PASApipeline/scripts/pasa_asmbls_to_training_set.dbi --pasa_transcripts_fasta Braincoral_mydb_pasa.pasa_assemblies.fasta --pasa_transcripts_gff3 Braincoral_mydb_pasa.pasa_assemblies.gff3
-/home/xinw/software/PASApipeline/scripts/pasa_asmbls_to_training_set.dbi --pasa_transcripts_fasta ../Braincoral_mydb_pasa.pasa_assemblies.fasta --pasa_transcripts_gff3 ../Braincoral_mydb_pasa.pasa_assemblies.gff3 Braincoral_pasa_assemble.gff3
+~/PASApipeline/scripts/pasa_asmbls_to_training_set.dbi --pasa_transcripts_fasta Braincoral_mydb_pasa.pasa_assemblies.fasta --pasa_transcripts_gff3 Braincoral_mydb_pasa.pasa_assemblies.gff3
+~/PASApipeline/scripts/pasa_asmbls_to_training_set.dbi --pasa_transcripts_fasta ../Braincoral_mydb_pasa.pasa_assemblies.fasta --pasa_transcripts_gff3 ../Braincoral_mydb_pasa.pasa_assemblies.gff3 Braincoral_pasa_assemble.gff3
 
 17.4 Check for complete ORF with at least 2 exons
 perl ../selectComplete.pl  Braincoral_mydb_pasa.pasa_assemblies.fasta.transdecoder.genome.gff3 Braincoral_mydb_pasa.pasa_assemblies.fasta.transdecoder.gff3 >selected_models_2exon.gff3
@@ -140,21 +145,21 @@ augustus --species=platygyria_test trainingSetComple.gb.test |tee firsttest.out
 Obtain exon file:
 perl -ne '{chomp;my @array=split/\s+/,$_; if($array[2] eq "gene"){print "\n"}elsif ($array[2] eq "exon") {if ($array[6] eq "+"){print "$array[0] $array[3] $array[4]\n"}else{print "$array[0] $array[4] $array[3]\n"}}}' selected_models_2exon_noredu_uniprotID.gff3 >Braincoral_glimmer_train.mmtrain
 training for glimmer:
-/home/xinw/software/GlimmerHMM/train/trainGlimmerHMM Braincoral_assembly_novirus_v1.fasta Braincoral_glimmer_train.mmtrain -d Glimmer_train
-perl /home/xinw/script/auto_glimmerhmm.pl -g Braincoral_assembly_novirus_v1.fasta -d Glimmer_train -w /home/xinw/project/Briancoral/gene_prediction/Glimmer/ -o Braincoral_glimmer -t 35 -f -gff > log.glimmer &
+~/GlimmerHMM/train/trainGlimmerHMM Braincoral_assembly_novirus_v1.fasta Braincoral_glimmer_train.mmtrain -d Glimmer_train
+perl ~/script/auto_glimmerhmm.pl -g Braincoral_assembly_novirus_v1.fasta -d Glimmer_train -w /home/xinw/project/Briancoral/gene_prediction/Glimmer/ -o Braincoral_glimmer -t 35 -f -gff > log.glimmer &
 
 ### 19 Convert into EVM format:
 Exonerate:
-perl /home/xinw/script/exonerate2evm.pl -i Braincoral_exonerate_all.out -o exonerate.gff3
+perl ~/exonerate2evm.pl -i Braincoral_exonerate_all.out -o exonerate.gff3
 sed 's/exonerate:protein2genome:local/exonerate/' exonerate.gff3 -i
 Mikado:
-perl /home/xinw/script/mikado_2evm.pl -i ../mikado.loci.gff3  -o mikado.gff3 -n mikado.ncRNA.gff3
+perl ~/script/mikado_2evm.pl -i ../mikado.loci.gff3  -o mikado.gff3 -n mikado.ncRNA.gff3
 Cufflink:
-perl /home/xinw/script/cufflinks_2evm.pl -i  ../Brain_cufflinks.gtf -o cufflinks.gff3
+perl ~/script/cufflinks_2evm.pl -i  ../Brain_cufflinks.gtf -o cufflinks.gff3
 Stringtie:
-perl /home/xinw/script/cufflinks_2evm.pl -i ../Braincoral_hisat_stringtie.gtf -o stringtie.gff3
+perl ~/script/cufflinks_2evm.pl -i ../Braincoral_hisat_stringtie.gtf -o stringtie.gff3
 Augustus:
-perl /home/xinw/script/augustus_add_order.pl -i Braincoral_augustus.out -o Braincoral_augustus.gff3
+perl ~/script/augustus_add_order.pl -i Braincoral_augustus.out -o Braincoral_augustus.gff3
 grep "^#" ../Braincoral_augustus.gff3 -v |grep "gene|CDS|transcript" -E >augustus.gff3
 
 Trinity:
@@ -165,7 +170,7 @@ sed 's/|size/_size/g' transcript_alignments.gff3 –i
 
 
 ### 20 Final intergrated with EVM
-/home/xinw/software/EVidenceModeler/EvmUtils/partition_EVM_inputs.pl --genome genome.fasta --gene_predictions gene_prediction.gff3 --protein_alignments protein_alignments.gff3 --transcript_alignments transcript_alignments.gff3 --segmentSize 100000 --overlapSize 10000 --partition_listing partitions_list.out]
+~/software/EVidenceModeler/EvmUtils/partition_EVM_inputs.pl --genome genome.fasta --gene_predictions gene_prediction.gff3 --protein_alignments protein_alignments.gff3 --transcript_alignments transcript_alignments.gff3 --segmentSize 100000 --overlapSize 10000 --partition_listing partitions_list.out]
 $EVM_HOME/EvmUtils/write_EVM_commands.pl --genome genome.fasta --weights `pwd`/weights.txt \
       --gene_predictions gene_predictions.gff3 --protein_alignments protein_alignments.gff3 \
       --transcript_alignments transcript_alignments.gff3 \
